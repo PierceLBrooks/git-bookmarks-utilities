@@ -17,7 +17,7 @@ def write(path, name, content):
 		return False
 	return True
 
-def convert(target, node, level):
+def convert(target, node, level, parent):
 	content = ""
 	content += "<html>"
 	content += "<head>"
@@ -28,6 +28,8 @@ def convert(target, node, level):
 		if (node.tag == "bookmark"):
 			index = node.attrib["index"]
 			content += index
+		else:
+			return False
 	content += "</title>"
 	content += "</head>"
 	content += "</body>"
@@ -45,7 +47,7 @@ def convert(target, node, level):
 				head = "&lt;"
 				tail = "&gt;"
 			content += "<br>&nbsp;*&nbsp;"+head+"<a href=\""
-			content += str(os.path.join(target, os.path.join("..", child.attrib["index"])))
+			content += child.attrib["index"]
 			content += ".html\">"
 			if ("name" in child.attrib):
 				content += child.attrib["name"]
@@ -56,15 +58,36 @@ def convert(target, node, level):
 					content += child.attrib["index"]
 			content += "</a>"
 			content += tail
-			if not (convert(target, child, level+1)):
+			if not (convert(target, child, level+1, node)):
 				return False
 		content += "</body>"
 		content += "</html>"
 		if not (write(target, "0", content)):
 			return False
 		return True
-	if not (node.tag == "bookmark"):
-		return False
+	if not (parent == None):
+		head = "("
+		tail = ")"
+		content += head
+		content += "<a href=\""
+		if ("index" in parent.attrib):
+			content += parent.attrib["index"]
+		else:
+			content += "0"
+		content += ".html\">"
+		if ("name" in parent.attrib):
+			content += parent.attrib["name"]
+		else:
+			if ("url" in parent.attrib):
+				content += parent.attrib["url"]
+			else:
+				if ("index" in parent.attrib):
+					content += parent.attrib["index"]
+				else:
+					content += "0"
+		content += "</a>"
+		content += tail
+		content += "<br>"
 	if ("name" in node.attrib):
 		if ("url" in node.attrib):
 			content += "<a href=\""
@@ -89,13 +112,13 @@ def convert(target, node, level):
 		for grand in child:
 			grands += 1
 		if (grands == 0):
-			head = "("
-			tail = ")"
+			head = "["
+			tail = "]"
 		else:
 			head = "&lt;"
 			tail = "&gt;"
 		content += "<br>&nbsp;*&nbsp;"+head+"<a href=\""
-		content += str(os.path.join(target, os.path.join("..", child.attrib["index"])))
+		content += child.attrib["index"]
 		content += ".html\">"
 		if ("name" in child.attrib):
 			content += child.attrib["name"]
@@ -106,7 +129,7 @@ def convert(target, node, level):
 				content += child.attrib["index"]
 		content += "</a>"
 		content += tail
-		if not (convert(target, child, level+1)):
+		if not (convert(target, child, level+1, node)):
 			return False
 	content += "</body>"
 	content += "</html>"
@@ -119,7 +142,7 @@ def run(source, destination):
 	print(destination)
 	tree = xml_tree.parse(source)
 	base = tree.getroot()
-	result = convert(destination, base, 0)
+	result = convert(destination, base, 0, None)
 	return result
 
 if (__name__ == "__main__"):
